@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Certificación Lavado de Tanques</title>
+
+<style th:inline="text">
+@page {
+    size: letter;
+    margin: 10mm 12mm 15mm 12mm;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    color: #000;
+    background-image: url([[${background}]]);
+    background-size: contain;
+    background-repeat: no-repeat;
+    margin-top: 140px;
+}
+
+.page-break {
+    page-break-before: always;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.88);
+}
+
+td, th {
+    border: 1.3px solid black;
+    padding: 4px;
+    vertical-align: top;
+}
+
+th {
+    background: rgba(217,217,217,0.95);
+    text-align: center;
+}
+
+.registro {
+    text-align: right;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.title {
+    text-align: center;
+    font-size: 13.5px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.section-title {
+    background: rgba(200,200,200,0.95);
+    padding: 4px;
+    border: 1.5px solid black;
+    margin-top: 6px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.label {
+    font-weight: bold;
+    background: rgba(240,240,240,0.95);
+    width: 22%;
+}
+
+.center {
+    text-align: center;
+}
+
+.observations {
+    height: 55px;
+}
+
+.signature-table {
+    width: 100%;
+    margin-top: 22px;
+    background: transparent;
+}
+
+.signature-table td {
+    border: none;
+    text-align: center;
+    background: transparent;
+    vertical-align: bottom;
+}
+
+.signature-box {
+    width: 85%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.signature-image {
+    height: 38px;
+    margin-bottom: -7px;
+}
+
+.signature-line-box {
+    border-top: 1.3px solid black;
+    padding-top: 4px;
+}
+
+.client-signature-space {
+    height: 38px;
+}
+
+.qr-box {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 8px;
+}
+
+.qr-box img {
+    height: 70px;
+}
+
+.footer-last {
+    margin-top: 12px;
+}
+
+.footer-last img {
+    width: 100%;
+}
+</style>
+</head>
+
+<body>
+
+<div class="registro">
+    Registro N° <span th:text="${certificate.certificateNumber}"></span>
+</div>
+
+<div class="title">
+    CERTIFICACIÓN LAVADO Y DESINFECCIÓN DE TANQUES
+</div>
+
+<div class="section-title">DATOS GENERALES</div>
+
+<table>
+<tr>
+<td class="label">EMPRESA</td>
+<td th:text="${certificate.client.businessName}"></td>
+<td class="label">FECHA DEL SERVICIO</td>
+<td th:text="${serviceDateFormatted}"></td>
+</tr>
+
+<tr>
+<td class="label">NIT / CC</td>
+<td th:text="${certificate.client.taxId}"></td>
+<td class="label">CIUDAD</td>
+<td th:text="${certificate.client.city}"></td>
+</tr>
+
+<tr>
+<td class="label">DIRECCIÓN</td>
+<td th:text="${certificate.client.address}"></td>
+<td class="label">TELÉFONO</td>
+<td th:text="${certificate.client.phone}"></td>
+</tr>
+</table>
+
+<div class="section-title">TIPO DE ESTABLECIMIENTO</div>
+
+<table>
+<tr>
+<td class="label">TIPO</td>
+<td th:text="${establishmentType}"></td>
+</tr>
+</table>
+
+<div class="section-title">ESPECIFICACIONES DE LOS TANQUES</div>
+
+<table>
+<tr>
+<th>TANQUE</th>
+<th>CAPACIDAD</th>
+<th>CANTIDAD</th>
+<th>MEDIDAS</th>
+<th>MATERIAL</th>
+</tr>
+
+<tr>
+<td th:text="${tankType}"></td>
+<td th:text="${tankCapacity}"></td>
+<td th:text="${tankQuantity}"></td>
+<td th:text="${tankMeasures}"></td>
+<td th:text="${tankMaterial}"></td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td class="label">Producto químico</td>
+<td th:text="${chemicalProduct}"></td>
+</tr>
+
+<tr>
+<td class="label">Sistema</td>
+<td th:text="${systemType}"></td>
+</tr>
+
+<tr>
+<td class="label">Herramienta</td>
+<td th:text="${toolUsed}"></td>
+</tr>
+</table>
+
+<div class="section-title">OBSERVACIONES</div>
+
+<table>
+<tr>
+<td class="observations" th:text="${observations}"></td>
+</tr>
+</table>
+
+<div class="section-title">CONTROL DE PROCEDIMIENTOS</div>
+
+<table>
+<tr>
+<th>Procedimiento</th>
+<th>SI</th>
+<th>NO</th>
+</tr>
+
+<tr>
+<td>Recomendaciones de seguridad</td>
+<td class="center">X</td>
+<td></td>
+</tr>
+
+<tr>
+<td>Verificación previa</td>
+<td class="center">X</td>
+<td></td>
+</tr>
+
+<tr>
+<td>Uso EPP</td>
+<td class="center">X</td>
+<td></td>
+</tr>
+
+<tr>
+<td>Entrega ficha técnica</td>
+<td class="center">X</td>
+<td></td>
+</tr>
+</table>
+
+<div class="page-break"></div>
+
+<div class="section-title">CALIFICACIÓN DEL SERVICIO</div>
+
+<table>
+<tr>
+<th>ITEM</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+</tr>
+
+<tr>
+<td>Calidad</td>
+<td></td><td></td><td></td><td></td><td></td>
+</tr>
+
+<tr>
+<td>Cumplimiento</td>
+<td></td><td></td><td></td><td></td><td></td>
+</tr>
+
+<tr>
+<td>Presentación</td>
+<td></td><td></td><td></td><td></td><td></td>
+</tr>
+
+<tr>
+<td>Atención</td>
+<td></td><td></td><td></td><td></td><td></td>
+</tr>
+
+<tr>
+<td>Equipos</td>
+<td></td><td></td><td></td><td></td><td></td>
+</tr>
+</table>
+
+<table class="signature-table">
+<tr>
+<td style="width:50%;">
+    <div class="signature-box">
+        <img th:src="${signature}" class="signature-image" alt="Firma gerente">
+        <div class="signature-line-box">
+            Funcionario FUMIALFA<br>
+            Gerente
+        </div>
+    </div>
+</td>
+
+<td style="width:50%;">
+    <div class="signature-box">
+        <div class="client-signature-space"></div>
+        <div class="signature-line-box">
+            Recibe a satisfacción<br>
+            Nombre: <span th:text="${certificate.client.legalName}"></span><br>
+            Identificación: <span th:text="${certificate.client.taxId}"></span>
+        </div>
+    </div>
+</td>
+</tr>
+</table>
+<div style="text-align:center; font-size:8px; margin-top:6px;">
+    Elaborado por: <span th:text="${certificate.createdBy}"></span>
+</div>
+<div class="qr-box">
+    <img th:src="${qr}" alt="QR certificado"><br>
+    <b>Verificación digital del certificado</b><br>
+    Escanee el código QR o visite el siguiente enlace:<br>
+    <span th:text="${verifyUrl}"></span>
+</div>
+
+<div class="footer-last">
+    <img th:src="${footer}" alt="Pie de página">
+</div>
+
+</body>
+</html>
