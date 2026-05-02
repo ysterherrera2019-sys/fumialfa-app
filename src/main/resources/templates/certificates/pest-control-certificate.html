@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Certificación Control de Plagas</title>
+
+<style th:inline="text">
+@page {
+    size: letter;
+    margin: 10mm 12mm 15mm 12mm;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    color: #000;
+    background-image: url([[${background}]]);
+    background-size: contain;
+    background-repeat: no-repeat;
+    margin-top: 140px;
+}
+
+.page-break { page-break-before: always; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.88);
+}
+
+td, th {
+    border: 1.3px solid black;
+    padding: 4px;
+    vertical-align: top;
+}
+
+th {
+    background: rgba(217,217,217,0.95);
+    text-align: center;
+}
+
+.registro {
+    text-align: right;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.title {
+    text-align: center;
+    font-size: 13.5px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.section-title {
+    background: rgba(200,200,200,0.95);
+    padding: 4px;
+    border: 1.5px solid black;
+    margin-top: 6px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.label {
+    font-weight: bold;
+    background: rgba(240,240,240,0.95);
+    width: 22%;
+}
+
+.center { text-align: center; }
+
+.observations { height: 55px; }
+
+.signature-table {
+    width: 100%;
+    margin-top: 22px;
+    background: transparent;
+}
+
+.signature-table td {
+    border: none;
+    text-align: center;
+    background: transparent;
+    vertical-align: bottom;
+}
+
+.signature-box {
+    width: 85%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.signature-image {
+    height: 38px;
+    margin-bottom: -7px;
+}
+
+.signature-line-box {
+    border-top: 1.3px solid black;
+    padding-top: 4px;
+}
+
+.client-signature-space { height: 38px; }
+
+.qr-box {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 8px;
+}
+
+.qr-box img { height: 70px; }
+
+.footer-last { margin-top: 12px; }
+
+.footer-last img { width: 100%; }
+</style>
+</head>
+
+<body>
+
+<div class="registro">
+    Registro N° <span th:text="${certificate.certificateNumber}"></span>
+</div>
+
+<div class="title">
+    CERTIFICACIÓN DE CONTROL DE PLAGAS
+</div>
+
+<div class="section-title">DATOS GENERALES</div>
+
+<table>
+<tr>
+<td class="label">EMPRESA</td>
+<td th:text="${certificate.client.businessName}"></td>
+<td class="label">FECHA DEL SERVICIO</td>
+<td th:text="${serviceDateFormatted}"></td>
+</tr>
+
+<tr>
+<td class="label">NIT / CC</td>
+<td th:text="${certificate.client.taxId}"></td>
+<td class="label">CIUDAD</td>
+<td th:text="${certificate.client.city}"></td>
+</tr>
+
+<tr>
+<td class="label">DIRECCIÓN</td>
+<td th:text="${certificate.client.address}"></td>
+<td class="label">TELÉFONO</td>
+<td th:text="${certificate.client.phone}"></td>
+</tr>
+</table>
+
+<div class="section-title">INFORMACIÓN DEL SERVICIO</div>
+
+<table>
+<tr>
+<td class="label">TIPO DE ESTABLECIMIENTO</td>
+<td th:text="${establishmentType}"></td>
+</tr>
+
+<tr>
+<td class="label">TIPO DE PLAGA</td>
+<td th:text="${pestType}"></td>
+</tr>
+
+<tr>
+<td class="label">TIPO DE TRATAMIENTO</td>
+<td th:text="${treatmentType}"></td>
+</tr>
+
+<tr>
+<td class="label">ÁREAS TRATADAS</td>
+<td th:text="${treatedAreas}"></td>
+</tr>
+</table>
+
+<div class="section-title">PRODUCTO UTILIZADO</div>
+
+<table>
+<tr>
+<th>PRODUCTO QUÍMICO</th>
+<th>DOSIS APLICADA</th>
+</tr>
+
+<tr>
+<td th:text="${chemicalProduct}"></td>
+<td th:text="${appliedDose}"></td>
+</tr>
+</table>
+
+<div class="section-title">OBSERVACIONES</div>
+
+<table>
+<tr>
+<td class="observations" th:text="${observations}"></td>
+</tr>
+</table>
+
+<div class="section-title">CONTROL Y CONFORMIDAD DEL SERVICIO</div>
+
+<table>
+<tr>
+<th>ITEM</th>
+<th>SI</th>
+<th>NO</th>
+</tr>
+
+<tr>
+<td>Inspección inicial del área</td>
+<td class="center">X</td>
+<td></td>
+</tr>
+
+<tr>
+<td>Aplicación del tratamiento</td>
+<td class="center">X</td>
+<td></td>
+</tr>
+
+<tr>
+<td>Recomendaciones entregadas al cliente</td>
+<td class="center">X</td>
+<td></td>
+</tr>
+
+<tr>
+<td>Servicio recibido a satisfacción</td>
+<td class="center">X</td>
+<td></td>
+</tr>
+</table>
+
+<div class="page-break"></div>
+
+<div class="section-title">FIRMAS Y VERIFICACIÓN</div>
+
+<table class="signature-table">
+<tr>
+<td style="width:50%;">
+    <div class="signature-box">
+        <img th:src="${signature}" class="signature-image" alt="Firma gerente">
+        <div class="signature-line-box">
+            Funcionario FUMIALFA<br>
+            Gerente
+        </div>
+    </div>
+</td>
+
+<td style="width:50%;">
+    <div class="signature-box">
+        <div class="client-signature-space"></div>
+        <div class="signature-line-box">
+            Recibe a satisfacción<br>
+            Nombre: <span th:text="${certificate.client.legalName}"></span><br>
+            Identificación: <span th:text="${certificate.client.taxId}"></span>
+        </div>
+    </div>
+</td>
+</tr>
+</table>
+<div style="text-align:center; font-size:8px; margin-top:6px;">
+    Elaborado por: <span th:text="${certificate.createdBy}"></span>
+</div>
+<div class="qr-box">
+    <img th:src="${qr}" alt="QR certificado"><br>
+    <b>Verificación digital del certificado</b><br>
+    Escanee el código QR o visite el siguiente enlace:<br>
+    <span th:text="${verifyUrl}"></span>
+</div>
+
+<div class="footer-last">
+    <img th:src="${footer}" alt="Pie de página">
+</div>
+
+</body>
+</html>
