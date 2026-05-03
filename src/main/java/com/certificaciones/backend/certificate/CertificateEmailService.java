@@ -1,25 +1,26 @@
 package com.certificaciones.backend.certificate;
 
 import com.certificaciones.backend.client.Client;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class CertificateEmailService {
 
-    private final JavaMailSender mailSender;
     private final CertificatePdfService pdfService;
+    private final RestClient restClient;
 
-    public CertificateEmailService(
-            JavaMailSender mailSender,
-            CertificatePdfService pdfService
-    ) {
-        this.mailSender = mailSender;
+    @Value("${resend.api.key}")
+    private String resendApiKey;
+
+    public CertificateEmailService(CertificatePdfService pdfService) {
         this.pdfService = pdfService;
+        this.restClient = RestClient.create("https://api.resend.com");
     }
 
     public void sendCertificate(Certificate certificate) {
@@ -41,34 +42,34 @@ public class CertificateEmailService {
 
         byte[] pdf = pdfService.generate(certificate);
 
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
+        String pdfBase64 = Base64.getEncoder().encodeToString(pdf);
 
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(email);
-            helper.setSubject("Certificado de servicio " + certificate.getCertificateNumber());
+        Map<String, Object> body = Map.of(
+                "from", "Certificaciones <onboarding@resend.dev>",
+                "to", List.of(email),
+                "subject", "Certificado de servicio " + certificate.getCertificateNumber(),
+                "text", """
+                        Cordial saludo,
 
-            helper.setText(
-                    """
-                    Cordial saludo,
+                        Adjuntamos el certificado correspondiente al servicio realizado.
 
-                    Adjuntamos el certificado correspondiente al servicio realizado.
+                        Atentamente,
+                        Certificaciones
+                        """,
+                "attachments", List.of(
+                        Map.of(
+                                "filename", "certificado_" + certificate.getCertificateNumber() + ".pdf",
+                                "content", pdfBase64
+                        )
+                )
+        );
 
-                    Atentamente,
-                    Certificaciones
-                    """,
-                    false
-            );
-
-            helper.addAttachment(
-                    "certificado_" + certificate.getCertificateNumber() + ".pdf",
-                    new ByteArrayResource(pdf)
-            );
-
-            mailSender.send(message);
-
-        } catch (MessagingException e) {
-            throw new RuntimeException("Error construyendo el correo del certificado");
-        }
+        restClient.post()
+                .uri("/emails")
+                .header("Authorization", "Bearer " + resendApiKey)
+                .header("Content-Type", "application/json")
+                .body(body)
+                .retrieve()
+                .toBodilessEntity();
     }
 }
