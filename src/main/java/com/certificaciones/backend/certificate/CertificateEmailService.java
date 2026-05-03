@@ -1,26 +1,43 @@
 package com.certificaciones.backend.certificate;
 
 import com.certificaciones.backend.client.Client;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Base64;
-import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 @Service
 public class CertificateEmailService {
 
     private final CertificatePdfService pdfService;
-    private final RestClient restClient;
+    private final RestClient googleTokenClient;
+    private final RestClient gmailClient;
 
-    @Value("${resend.api.key}")
-    private String resendApiKey;
+    @Value("${gmail.client.id}")
+    private String gmailClientId;
+
+    @Value("${gmail.client.secret}")
+    private String gmailClientSecret;
+
+    @Value("${gmail.refresh.token}")
+    private String gmailRefreshToken;
+
+    @Value("${mail.from}")
+    private String mailFrom;
 
     public CertificateEmailService(CertificatePdfService pdfService) {
         this.pdfService = pdfService;
-        this.restClient = RestClient.create("https://api.resend.com");
+        this.googleTokenClient = RestClient.create("https://oauth2.googleapis.com");
+        this.gmailClient = RestClient.create("https://gmail.googleapis.com");
     }
 
     public void sendCertificate(Certificate certificate) {
@@ -40,36 +57,94 @@ public class CertificateEmailService {
             throw new RuntimeException("El cliente no tiene correo registrado");
         }
 
-        byte[] pdf = pdfService.generate(certificate);
+        try {
+            byte[] pdf = pdfService.generate(certificate);
+            String accessToken = getAccessToken();
 
-        String pdfBase64 = Base64.getEncoder().encodeToString(pdf);
+            MimeMessage message = buildEmail(
+                    email,
+                    "Certificado de servicio " + certificate.getCertificateNumber(),
+                    pdf,
+                    "certificado_" + certificate.getCertificateNumber() + ".pdf"
+            );
 
-        Map<String, Object> body = Map.of(
-                "from", "Certificaciones <onboarding@resend.dev>",
-                "to", List.of(email),
-                "subject", "Certificado de servicio " + certificate.getCertificateNumber(),
-                "text", """
-                        Cordial saludo,
+            String rawMessage = encodeMessage(message);
 
-                        Adjuntamos el certificado correspondiente al servicio realizado.
+            gmailClient.post()
+                    .uri("/gmail/v1/users/me/messages/send")
+                    .header("Authorization", "Bearer " + accessToken)
+                    .body(Map.of("raw", rawMessage))
+                    .retrieve()
+                    .toBodilessEntity();
 
-                        Atentamente,
-                        Certificaciones
-                        """,
-                "attachments", List.of(
-                        Map.of(
-                                "filename", "certificado_" + certificate.getCertificateNumber() + ".pdf",
-                                "content", pdfBase64
-                        )
-                )
-        );
+        } catch (Exception e) {
+            throw new RuntimeException("Error enviando certificado por Gmail API: " + e.getMessage(), e);
+        }
+    }
 
-        restClient.post()
-                .uri("/emails")
-                .header("Authorization", "Bearer " + resendApiKey)
-                .header("Content-Type", "application/json")
-                .body(body)
+    private String getAccessToken() {
+        Map<String, String> response = googleTokenClient.post()
+                .uri("/token")
+                .body(Map.of(
+                        "client_id", gmailClientId,
+                        "client_secret", gmailClientSecret,
+                        "refresh_token", gmailRefreshToken,
+                        "grant_type", "refresh_token"
+                ))
                 .retrieve()
-                .toBodilessEntity();
+                .body(Map.class);
+
+        if (response == null || response.get("access_token") == null) {
+            throw new RuntimeException("No se pudo obtener access_token de Google");
+        }
+
+        return response.get("access_token");
+    }
+
+    private MimeMessage buildEmail(
+            String to,
+            String subject,
+            byte[] pdf,
+            String pdfName
+    ) throws Exception {
+
+        Session session = Session.getInstance(new Properties());
+        MimeMessage message = new MimeMessage(session);
+
+        message.setFrom(mailFrom);
+        message.setRecipients(MimeMessage.RecipientType.TO, to);
+        message.setSubject(subject, "UTF-8");
+
+        MimeBodyPart textPart = new MimeBodyPart();
+        textPart.setText("""
+                Cordial saludo,
+
+                Adjuntamos el certificado correspondiente al servicio realizado.
+
+                Atentamente,
+                Certificaciones
+                """, "UTF-8");
+
+        MimeBodyPart attachmentPart = new MimeBodyPart();
+        attachmentPart.setFileName(pdfName);
+        attachmentPart.setContent(pdf, "application/pdf");
+
+        MimeMultipart multipart = new MimeMultipart();
+        multipart.addBodyPart(textPart);
+        multipart.addBodyPart(attachmentPart);
+
+        message.setContent(multipart);
+        message.saveChanges();
+
+        return message;
+    }
+
+    private String encodeMessage(MimeMessage message) throws Exception {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        message.writeTo(buffer);
+
+        return Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(buffer.toByteArray());
     }
 }
