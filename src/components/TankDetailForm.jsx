@@ -55,18 +55,17 @@ const toolUsedOptions = [
 ];
 
 export default function TankDetailForm({ certificateId, onBack }) {
-
   const [form, setForm] = useState({
     establishmentType: "",
-    tankType: "",
+    tankType: [],
     tankCapacity: "",
     otherTankCapacity: "",
     tankQuantity: "",
     tankMeasures: "",
-    tankMaterial: "",
-    chemicalProduct: "",
-    systemType: "",
-    toolUsed: "",
+    tankMaterial: [],
+    chemicalProduct: [],
+    systemType: [],
+    toolUsed: [],
     observations: ""
   });
 
@@ -74,51 +73,19 @@ export default function TankDetailForm({ certificateId, onBack }) {
   const [saving, setSaving] = useState(false);
 
   const validate = () => {
-
-    if (!form.establishmentType.trim()) {
-      return "Tipo de establecimiento obligatorio";
-    }
-
-    if (!form.tankType.trim()) {
-      return "Tipo de tanque obligatorio";
-    }
-
-    if (!form.tankCapacity.trim()) {
-      return "Capacidad obligatoria";
-    }
-
-    if (
-      form.tankCapacity === "Otra" &&
-      !form.otherTankCapacity.trim()
-    ) {
-      return "Digite la capacidad";
-    }
-
-    if (!form.tankQuantity.trim()) {
-      return "Cantidad obligatoria";
-    }
-
-    if (!form.tankMaterial.trim()) {
-      return "Material obligatorio";
-    }
-
-    if (!form.chemicalProduct.trim()) {
-      return "Producto químico obligatorio";
-    }
-
-    if (!form.systemType.trim()) {
-      return "Sistema obligatorio";
-    }
-
-    if (!form.toolUsed.trim()) {
-      return "Herramienta obligatoria";
-    }
-
+    if (!form.establishmentType.trim()) return "Tipo de establecimiento obligatorio";
+    if (form.tankType.length === 0) return "Tipo de tanque obligatorio";
+    if (!form.tankCapacity.trim()) return "Capacidad obligatoria";
+    if (form.tankCapacity === "Otra" && !form.otherTankCapacity.trim()) return "Digite la capacidad";
+    if (!form.tankQuantity.trim()) return "Cantidad obligatoria";
+    if (form.tankMaterial.length === 0) return "Material obligatorio";
+    if (form.chemicalProduct.length === 0) return "Producto químico obligatorio";
+    if (form.systemType.length === 0) return "Sistema obligatorio";
+    if (form.toolUsed.length === 0) return "Herramienta obligatoria";
     return null;
   };
 
   const handleChange = (e) => {
-
     const { name, value } = e.target;
 
     setForm((prev) => ({
@@ -130,8 +97,24 @@ export default function TankDetailForm({ certificateId, onBack }) {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleMultiChange = (name, option) => {
+    setForm((prev) => {
+      const currentValues = prev[name];
 
+      const updatedValues = currentValues.includes(option)
+        ? currentValues.filter((item) => item !== option)
+        : [...currentValues, option];
+
+      return {
+        ...prev,
+        [name]: updatedValues
+      };
+    });
+  };
+
+  const joinValues = (values) => values.join(" - ");
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const error = validate();
@@ -146,47 +129,40 @@ export default function TankDetailForm({ certificateId, onBack }) {
 
     const payload = {
       ...form,
+      tankType: joinValues(form.tankType),
       tankCapacity:
         form.tankCapacity === "Otra"
           ? form.otherTankCapacity
-          : form.tankCapacity
+          : form.tankCapacity,
+      tankMaterial: joinValues(form.tankMaterial),
+      chemicalProduct: joinValues(form.chemicalProduct),
+      systemType: joinValues(form.systemType),
+      toolUsed: joinValues(form.toolUsed)
     };
 
     delete payload.otherTankCapacity;
 
     try {
-
-      await api.put(
-        `/api/certificates/${certificateId}/tank-detail`,
-        payload
-      );
-
+      await api.put(`/api/certificates/${certificateId}/tank-detail`, payload);
       setMessage("Datos técnicos guardados correctamente");
-
     } catch (error) {
-
       setMessage(
         error.response?.data?.message ||
         error.response?.data ||
         "Error guardando datos"
       );
-
     } finally {
-
       setSaving(false);
-
     }
   };
 
   const renderSelect = (name, label, options) => (
-
     <select
       style={styles.select}
       name={name}
       value={form[name]}
       onChange={handleChange}
     >
-
       <option value="" disabled>
         {label}
       </option>
@@ -196,29 +172,47 @@ export default function TankDetailForm({ certificateId, onBack }) {
           {option}
         </option>
       ))}
-
     </select>
   );
 
+  const renderMultiSelect = (name, label, options) => (
+    <div style={styles.multiBox}>
+      <p style={styles.multiLabel}>{label}</p>
+
+      <div style={styles.checkboxGrid}>
+        {options.map((option) => (
+          <label key={option} style={styles.checkboxItem}>
+            <input
+              type="checkbox"
+              checked={form[name].includes(option)}
+              onChange={() => handleMultiChange(name, option)}
+            />
+            <span>{option}</span>
+          </label>
+        ))}
+      </div>
+
+      {form[name].length > 0 && (
+        <div style={styles.preview}>
+          {form[name].join(" - ")}
+        </div>
+      )}
+    </div>
+  );
+
   return (
-
     <div style={styles.page}>
-
       <div style={styles.card}>
-
-        <h2 style={styles.title}>
-          Detalle Técnico - Tanques
-        </h2>
+        <h2 style={styles.title}>Detalle Técnico - Tanques</h2>
 
         <form onSubmit={handleSubmit} style={styles.form}>
-
           {renderSelect(
             "establishmentType",
             "Seleccione tipo de establecimiento",
             establishmentTypeOptions
           )}
 
-          {renderSelect(
+          {renderMultiSelect(
             "tankType",
             "Seleccione tipo de tanque",
             tankTypeOptions
@@ -256,25 +250,25 @@ export default function TankDetailForm({ certificateId, onBack }) {
             onChange={handleChange}
           />
 
-          {renderSelect(
+          {renderMultiSelect(
             "tankMaterial",
             "Seleccione material",
             tankMaterialOptions
           )}
 
-          {renderSelect(
+          {renderMultiSelect(
             "chemicalProduct",
             "Seleccione producto químico",
             chemicalProductOptions
           )}
 
-          {renderSelect(
+          {renderMultiSelect(
             "systemType",
             "Seleccione sistema",
             systemTypeOptions
           )}
 
-          {renderSelect(
+          {renderMultiSelect(
             "toolUsed",
             "Seleccione herramienta",
             toolUsedOptions
@@ -288,37 +282,22 @@ export default function TankDetailForm({ certificateId, onBack }) {
             onChange={handleChange}
           />
 
-          <button
-            type="submit"
-            style={styles.saveButton}
-            disabled={saving}
-          >
+          <button type="submit" style={styles.saveButton} disabled={saving}>
             {saving ? "Guardando..." : "Guardar"}
           </button>
-
         </form>
 
-        {message && (
-          <p style={styles.message}>
-            {message}
-          </p>
-        )}
+        {message && <p style={styles.message}>{message}</p>}
 
-        <button
-          style={styles.backButton}
-          onClick={onBack}
-        >
+        <button style={styles.backButton} onClick={onBack}>
           Volver
         </button>
-
       </div>
-
     </div>
   );
 }
 
 const styles = {
-
   page: {
     minHeight: "100vh",
     background: "#111827",
@@ -364,6 +343,44 @@ const styles = {
     color: "#ffffff",
     fontSize: "16px",
     cursor: "pointer"
+  },
+
+  multiBox: {
+    border: "1px solid #6b7280",
+    background: "#374151",
+    borderRadius: "6px",
+    padding: "10px"
+  },
+
+  multiLabel: {
+    margin: "0 0 8px 0",
+    color: "#d1d5db",
+    fontSize: "15px",
+    fontWeight: "bold"
+  },
+
+  checkboxGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "8px"
+  },
+
+  checkboxItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    color: "#ffffff",
+    fontSize: "15px",
+    cursor: "pointer"
+  },
+
+  preview: {
+    marginTop: "10px",
+    padding: "8px",
+    background: "#111827",
+    borderRadius: "6px",
+    color: "#93c5fd",
+    fontSize: "14px"
   },
 
   textarea: {
