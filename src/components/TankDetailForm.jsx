@@ -55,6 +55,7 @@ const toolUsedOptions = [
 ];
 
 export default function TankDetailForm({ certificateId, onBack }) {
+
   const [form, setForm] = useState({
     establishmentType: "",
     tankType: "",
@@ -73,6 +74,7 @@ export default function TankDetailForm({ certificateId, onBack }) {
   const [saving, setSaving] = useState(false);
 
   const validate = () => {
+
     if (!form.establishmentType.trim()) {
       return "Tipo de establecimiento obligatorio";
     }
@@ -116,6 +118,7 @@ export default function TankDetailForm({ certificateId, onBack }) {
   };
 
   const handleChange = (e) => {
+
     const { name, value } = e.target;
 
     setForm((prev) => ({
@@ -128,6 +131,7 @@ export default function TankDetailForm({ certificateId, onBack }) {
   };
 
   const handleSubmit = async (e) => {
+
     e.preventDefault();
 
     const error = validate();
@@ -151,43 +155,57 @@ export default function TankDetailForm({ certificateId, onBack }) {
     delete payload.otherTankCapacity;
 
     try {
+
       await api.put(
         `/api/certificates/${certificateId}/tank-detail`,
         payload
       );
 
       setMessage("Datos técnicos guardados correctamente");
+
     } catch (error) {
+
       setMessage(
         error.response?.data?.message ||
         error.response?.data ||
         "Error guardando datos"
       );
+
     } finally {
+
       setSaving(false);
+
     }
   };
 
   const renderSelect = (name, label, options) => (
+
     <select
-      style={styles.input}
+      style={styles.select}
       name={name}
       value={form[name]}
       onChange={handleChange}
     >
-      <option value="">{label}</option>
+
+      <option value="" disabled>
+        {label}
+      </option>
 
       {options.map((option) => (
         <option key={option} value={option}>
           {option}
         </option>
       ))}
+
     </select>
   );
 
   return (
+
     <div style={styles.page}>
+
       <div style={styles.card}>
+
         <h2 style={styles.title}>
           Detalle Técnico - Tanques
         </h2>
@@ -277,6 +295,7 @@ export default function TankDetailForm({ certificateId, onBack }) {
           >
             {saving ? "Guardando..." : "Guardar"}
           </button>
+
         </form>
 
         {message && (
@@ -291,12 +310,15 @@ export default function TankDetailForm({ certificateId, onBack }) {
         >
           Volver
         </button>
+
       </div>
+
     </div>
   );
 }
 
 const styles = {
+
   page: {
     minHeight: "100vh",
     background: "#111827",
@@ -332,6 +354,16 @@ const styles = {
     background: "#374151",
     color: "#ffffff",
     fontSize: "16px"
+  },
+
+  select: {
+    padding: "10px",
+    borderRadius: "6px",
+    border: "1px solid #6b7280",
+    background: "#374151",
+    color: "#ffffff",
+    fontSize: "16px",
+    cursor: "pointer"
   },
 
   textarea: {
