@@ -13,7 +13,8 @@ const establishmentTypeOptions = [
 const tankTypeOptions = [
   "Elevado",
   "Subterráneo",
-  "En piso"
+  "En piso",
+  "Otro"
 ];
 
 const tankCapacityOptions = [
@@ -37,13 +38,15 @@ const tankMaterialOptions = [
 
 const chemicalProductOptions = [
   "Hipoclorito al 0.5%",
-  "Desengrasante biodegradable"
+  "Desengrasante biodegradable",
+  "Otro"
 ];
 
 const systemTypeOptions = [
   "Hidrolavado",
   "Manual",
-  "Cepillado"
+  "Cepillado",
+  "Otro"
 ];
 
 const toolUsedOptions = [
@@ -51,37 +54,142 @@ const toolUsedOptions = [
   "Cepillo",
   "Escoba",
   "Trapero",
-  "IPP"
+  "IPP",
+  "Otro"
 ];
+
+const otherFieldsMap = {
+  tankType: "otherTankType",
+  tankMaterial: "otherTankMaterial",
+  chemicalProduct: "otherChemicalProduct",
+  systemType: "otherSystemType",
+  toolUsed: "otherToolUsed"
+};
+
+const isOtherOption = (option) =>
+  option.toLowerCase().includes("otro");
 
 export default function TankDetailForm({ certificateId, onBack }) {
   const [form, setForm] = useState({
     establishmentType: "",
     tankType: [],
+    otherTankType: "",
     tankCapacity: "",
     otherTankCapacity: "",
     tankQuantity: "",
     tankMeasures: "",
     tankMaterial: [],
+    otherTankMaterial: "",
     chemicalProduct: [],
+    otherChemicalProduct: "",
     systemType: [],
+    otherSystemType: "",
     toolUsed: [],
+    otherToolUsed: "",
     observations: ""
   });
 
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const buildMultiValue = (fieldName, values) => {
+    const otherField = otherFieldsMap[fieldName];
+
+    return values
+      .map((value) => {
+        if (isOtherOption(value)) {
+          return form[otherField]?.trim();
+        }
+
+        return value;
+      })
+      .filter(Boolean)
+      .join(" - ");
+  };
+
+  const validateOtherField = (fieldName, label) => {
+    const otherField = otherFieldsMap[fieldName];
+
+    if (
+      form[fieldName].some(isOtherOption) &&
+      !form[otherField].trim()
+    ) {
+      return `Debe especificar ${label}`;
+    }
+
+    return null;
+  };
+
   const validate = () => {
-    if (!form.establishmentType.trim()) return "Tipo de establecimiento obligatorio";
-    if (form.tankType.length === 0) return "Tipo de tanque obligatorio";
-    if (!form.tankCapacity.trim()) return "Capacidad obligatoria";
-    if (form.tankCapacity === "Otra" && !form.otherTankCapacity.trim()) return "Digite la capacidad";
-    if (!form.tankQuantity.trim()) return "Cantidad obligatoria";
-    if (form.tankMaterial.length === 0) return "Material obligatorio";
-    if (form.chemicalProduct.length === 0) return "Producto químico obligatorio";
-    if (form.systemType.length === 0) return "Sistema obligatorio";
-    if (form.toolUsed.length === 0) return "Herramienta obligatoria";
+    if (!form.establishmentType.trim()) {
+      return "Tipo de establecimiento obligatorio";
+    }
+
+    if (form.tankType.length === 0) {
+      return "Tipo de tanque obligatorio";
+    }
+
+    const tankTypeOtherError = validateOtherField(
+      "tankType",
+      "el otro tipo de tanque"
+    );
+    if (tankTypeOtherError) return tankTypeOtherError;
+
+    if (!form.tankCapacity.trim()) {
+      return "Capacidad obligatoria";
+    }
+
+    if (
+      form.tankCapacity === "Otra" &&
+      !form.otherTankCapacity.trim()
+    ) {
+      return "Digite la capacidad";
+    }
+
+    if (!form.tankQuantity.trim()) {
+      return "Cantidad obligatoria";
+    }
+
+    if (form.tankMaterial.length === 0) {
+      return "Material obligatorio";
+    }
+
+    const tankMaterialOtherError = validateOtherField(
+      "tankMaterial",
+      "el otro material"
+    );
+    if (tankMaterialOtherError) return tankMaterialOtherError;
+
+    if (form.chemicalProduct.length === 0) {
+      return "Producto químico obligatorio";
+    }
+
+    const chemicalOtherError = validateOtherField(
+      "chemicalProduct",
+      "el otro producto químico"
+    );
+    if (chemicalOtherError) return chemicalOtherError;
+
+    if (form.systemType.length === 0) {
+      return "Sistema obligatorio";
+    }
+
+    const systemOtherError = validateOtherField(
+      "systemType",
+      "el otro sistema"
+    );
+    if (systemOtherError) return systemOtherError;
+
+    if (form.toolUsed.length === 0) {
+      return "Herramienta obligatoria";
+    }
+
+    const toolOtherError = validateOtherField(
+      "toolUsed",
+      "la otra herramienta"
+    );
+    if (toolOtherError) return toolOtherError;
+
     return null;
   };
 
@@ -105,14 +213,19 @@ export default function TankDetailForm({ certificateId, onBack }) {
         ? currentValues.filter((item) => item !== option)
         : [...currentValues, option];
 
+      const otherField = otherFieldsMap[name];
+
       return {
         ...prev,
-        [name]: updatedValues
+        [name]: updatedValues,
+        ...(isOtherOption(option) &&
+        currentValues.includes(option) &&
+        otherField
+          ? { [otherField]: "" }
+          : {})
       };
     });
   };
-
-  const joinValues = (values) => values.join(" - ");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -129,27 +242,39 @@ export default function TankDetailForm({ certificateId, onBack }) {
 
     const payload = {
       ...form,
-      tankType: joinValues(form.tankType),
+      tankType: buildMultiValue("tankType", form.tankType),
       tankCapacity:
         form.tankCapacity === "Otra"
           ? form.otherTankCapacity
           : form.tankCapacity,
-      tankMaterial: joinValues(form.tankMaterial),
-      chemicalProduct: joinValues(form.chemicalProduct),
-      systemType: joinValues(form.systemType),
-      toolUsed: joinValues(form.toolUsed)
+      tankMaterial: buildMultiValue("tankMaterial", form.tankMaterial),
+      chemicalProduct: buildMultiValue(
+        "chemicalProduct",
+        form.chemicalProduct
+      ),
+      systemType: buildMultiValue("systemType", form.systemType),
+      toolUsed: buildMultiValue("toolUsed", form.toolUsed)
     };
 
+    delete payload.otherTankType;
     delete payload.otherTankCapacity;
+    delete payload.otherTankMaterial;
+    delete payload.otherChemicalProduct;
+    delete payload.otherSystemType;
+    delete payload.otherToolUsed;
 
     try {
-      await api.put(`/api/certificates/${certificateId}/tank-detail`, payload);
+      await api.put(
+        `/api/certificates/${certificateId}/tank-detail`,
+        payload
+      );
+
       setMessage("Datos técnicos guardados correctamente");
     } catch (error) {
       setMessage(
         error.response?.data?.message ||
-        error.response?.data ||
-        "Error guardando datos"
+          error.response?.data ||
+          "Error guardando datos"
       );
     } finally {
       setSaving(false);
@@ -175,30 +300,45 @@ export default function TankDetailForm({ certificateId, onBack }) {
     </select>
   );
 
-  const renderMultiSelect = (name, label, options) => (
-    <div style={styles.multiBox}>
-      <p style={styles.multiLabel}>{label}</p>
+  const renderMultiSelect = (name, label, options) => {
+    const otherField = otherFieldsMap[name];
+    const hasOtherSelected = form[name].some(isOtherOption);
 
-      <div style={styles.checkboxGrid}>
-        {options.map((option) => (
-          <label key={option} style={styles.checkboxItem}>
-            <input
-              type="checkbox"
-              checked={form[name].includes(option)}
-              onChange={() => handleMultiChange(name, option)}
-            />
-            <span>{option}</span>
-          </label>
-        ))}
-      </div>
+    return (
+      <div style={styles.multiBox}>
+        <p style={styles.multiLabel}>{label}</p>
 
-      {form[name].length > 0 && (
-        <div style={styles.preview}>
-          {form[name].join(" - ")}
+        <div style={styles.checkboxGrid}>
+          {options.map((option) => (
+            <label key={option} style={styles.checkboxItem}>
+              <input
+                type="checkbox"
+                checked={form[name].includes(option)}
+                onChange={() => handleMultiChange(name, option)}
+              />
+              <span>{option}</span>
+            </label>
+          ))}
         </div>
-      )}
-    </div>
-  );
+
+        {hasOtherSelected && (
+          <input
+            style={{ ...styles.input, marginTop: "10px" }}
+            name={otherField}
+            placeholder="Especifique cuál otro"
+            value={form[otherField]}
+            onChange={handleChange}
+          />
+        )}
+
+        {form[name].length > 0 && (
+          <div style={styles.preview}>
+            {buildMultiValue(name, form[name])}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={styles.page}>
@@ -282,7 +422,11 @@ export default function TankDetailForm({ certificateId, onBack }) {
             onChange={handleChange}
           />
 
-          <button type="submit" style={styles.saveButton} disabled={saving}>
+          <button
+            type="submit"
+            style={styles.saveButton}
+            disabled={saving}
+          >
             {saving ? "Guardando..." : "Guardar"}
           </button>
         </form>
